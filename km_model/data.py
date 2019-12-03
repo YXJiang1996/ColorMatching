@@ -137,11 +137,11 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     for i in colors:
         concentrations[:, i] = prior_bound[0] + (prior_bound[1] - prior_bound[0]) * concentrations[:, i]
 
-    # 在21中颜色中选3种的排列组合
-    r = list(combinations(np.arange(0, colors.size, 1), 3))
+    # 在21中颜色中选18种的排列组合
+    r = list(combinations(np.arange(0, colors.size, 1), 18))
     r_num = r.__len__()
     n = N // r_num
-    #
+    # 根据排列组合将对应的位置为0
     for i in range(r_num - 1):
         concentrations[i * n:(i + 1) * n, r[i]] = 0.
     concentrations[(r_num - 1) * n:, r[r_num - 1]] = 0.
@@ -160,12 +160,12 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
         fst=((np.ones_like(ingredients)-ingredients)**2/(ingredients*2)-fsb)/initial_conc_array
         # ydim*N的0
         fss=np.zeros(N*ydim).reshape(ydim,N)
-        # 涂料的分光反射率,论文公式4-6c
+        # 涂料的K/S值,论文公式4-6c
         for i in xidx:
             for j in colors:
                 fss[i, :] += concentrations[:, j] * fst[j, i]
             fss[i, :] += np.ones(N) * fsb[i]
-        # 涂料分分光反射率，论文公式4-6d
+        # 涂料的分光反射率，论文公式4-6d
         reflectance = fss - ((fss + 1) ** 2 - 1) ** 0.5 + 1
         # 转置
         reflectance = reflectance.transpose()
