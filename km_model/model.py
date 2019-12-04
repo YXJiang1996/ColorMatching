@@ -182,6 +182,7 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
 
 def main():
     # ---------------------------------------生成数据------------------------------------------
+    t_generate_start=time()
     # 设置模拟数据参数
     r = 3  # the grid dimension for the output tests
     test_split = r * r  # number of testing samples to use
@@ -216,6 +217,7 @@ def main():
             axes[i, j].axis([400, 700, 0, 1])
     plt.savefig('test_target_reflectance.png', dpi=360)
     plt.close()
+    print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
 
     # ---------------------------------------构建网络------------------------------------------
     # 设置模型参数值 TODO
