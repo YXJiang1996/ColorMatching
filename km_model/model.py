@@ -1,5 +1,6 @@
 import torch
 import torch.optim
+from torch.utils import data
 
 import numpy as np
 import matplotlib
@@ -199,12 +200,15 @@ def main():
         prior_bound=bound,
         seed=seed
     )
-
+    print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
     colors = np.arange(0, concentrations.shape[-1], 1)
 
     # 截取数据集用于画图
-    c_test = concentrations[-test_split]
-    r_test = reflectance[-test_split]
+    c_test = concentrations[-test_split:]
+    r_test = reflectance[-test_split:]
+    print(reflectance)
+    print(r_test)
+    print(np.array(r_test[0, :]))
 
     # 示例数据分光反射率3*3图
     plt.figure(figsize=(6, 6))
@@ -213,6 +217,7 @@ def main():
     for i in range(r):
         for j in range(r):
             axes[i, j].plot(x, np.array(r_test[cnt, :]), '-')
+            # axes[i, j].plot(x, 1, '-')
             cnt += 1
             axes[i, j].axis([400, 700, 0, 1])
     plt.savefig('test_target_reflectance.png', dpi=360)
@@ -358,8 +363,10 @@ def main():
             if (i_epoch % plot_cadence == 0) & (i_epoch > 0):
                 plot_losses(inn_losses, legend=['PE-GEN'])
 
+        # TODO
         # torch.save(model, 'model_dir/4flux_impl_model')
-        model = torch.load('model_dir/km_impl_model')
+        # model = torch.load('model_dir/km_impl_model')
+        torch.save(model,'model_dir/km_impl_model')
 
         fig, axes = plt.subplots(1, 1, figsize=(2, 2))
         test_samps = np.array([[0.2673378, 0.3132285, 0.3183329, 0.3234908, 0.3318701, 0.3409707, 0.3604081, 0.4168356,

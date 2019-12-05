@@ -145,7 +145,6 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     for i in range(r_num - 1):
         concentrations[i * n:(i + 1) * n, r[i]] = 0.
     concentrations[(r_num - 1) * n:, r[r_num - 1]] = 0.
-    print(concentrations)
     # 波长的序列和索引序列
     xvec = np.arange(400, 710, 10)
     xidx = np.arange(0, ydim, 1)
@@ -177,5 +176,162 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     shuffling = np.random.permutation(N)
     concentrations = torch.tensor(concentrations[shuffling], dtype=torch.float)
     reflectance = torch.tensor(reflectance[shuffling], dtype=torch.float)
-    print(concentrations)
     return concentrations, reflectance, xvec, info
+
+def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
+    mcx = np.linspace(bound[0], bound[1], n_grid)
+    dmcx = mcx[1] - mcx[0]
+
+    # Get painting information
+    ydim = ydata.size
+    background = info[:ydim]
+    colors = np.arange(0, (info.shape[-1] - ydim) // (ydim + 1), 1)
+    initial_concentration = np.zeros(colors.size * 1)
+    ingredients = np.zeros(colors.size * ydim).reshape(colors.size, ydim)
+    for i in colors:
+        initial_concentration[i] = info[ydim + i * (ydim + 1)]
+        ingredients[i] = info[ydim + i * (ydim + 1) + 1:ydim + (i + 1) * (ydim + 1)]
+
+    init_conc_array = np.repeat(initial_concentration.reshape(colors.size, 1), ydim).reshape(colors.size, ydim)
+
+    # concentrations of painting
+    # 这里缺乏灵活性，之后再改
+    cons = np.zeros((n_grid ** colors.size, colors.size))
+    yidx = np.arange(0, ydim, 1)
+    for i, c in enumerate(mcx):
+        for j, d in enumerate(mcx):
+            for k, e in enumerate(mcx):
+                for l, f in enumerate(mcx):
+                    for m, g in enumerate(mcx):
+                        for n, h in enumerate(mcx):
+                            cons[i * (n_grid ** 5) + j * (n_grid ** 4) + k * (n_grid ** 3) +
+                                 l * (n_grid ** 2) + m * n_grid + n] = [c, d, e, f, g, h]
+
+    diff = np.zeros(n_grid ** colors.size)
+    if model == 'km':
+        fsb = (np.ones_like(background) - background) ** 2 / (background * 2)
+        fst = ((np.ones_like(ingredients) - ingredients) ** 2 / (ingredients * 2) - fsb) / init_conc_array
+        fss = np.zeros((n_grid ** colors.size, yidx.size))
+        for i in yidx:
+            for j in colors:
+                fss[:, i] += cons[:, j] * fst[j, i]
+            fss[:, i] += np.ones(n_grid ** colors.size) * fsb[i]
+        diff = np.array([color_diff(ydata, p - ((p + 1) ** 2 - 1) ** 0.5 + 1) for p in fss]).transpose()
+
+    elif model == 'four_flux':
+        print('Sorry the model have not implemented yet')
+        exit(1)
+
+    else:
+        print('Sorry no model of that name')
+        exit(1)
+
+    # normalise the posterior
+    diff /= (np.sum(diff.flatten()) * (dmcx ** colors.size))
+
+    # compute integrated probability outwards from max point
+    diff = diff.flatten()
+    idx = np.argsort(diff)[::-1]
+    prob = np.zeros(n_grid ** colors.size)
+    prob[idx] = np.cumsum(diff[idx]) * (dmcx ** colors.size)
+    return mcx, cons, prob
+
+
+def recipe_reflectance(recipes, model='km'):
+    xidx = np.arange(0, 31, 1)
+    init_conc_array = np.repeat(cInit.reshape(21, 1), 31).reshape(21, 31)
+    reflectance = np.zeros(31 * recipes.shape[0]).reshape(31, recipes.shape[0])
+
+    if model == 'km':
+        fsb = (np.ones_like(background) - background) ** 2 / (background * 2)
+        fst = ((np.ones_like(ingredients) - ingredients) ** 2 / (ingredients * 2) - fsb) / init_conc_array
+        fss = np.zeros(31 * recipes.shape[0]).reshape(31, recipes.shape[0])
+        for i in xidx:
+            for j in range(6):
+                fss[i, :] += recipes[:, j] * fst[j, i]
+            fss[i, :] += np.ones(recipes.shape[0]) * fsb[i]
+
+        reflectance = fss - ((fss + 1) ** 2 - 1) ** 0.5 + 1
+        reflectance = reflectance.transpose()
+
+    elif model == 'four_flux':
+        ones_background = np.ones_like(background)
+        fsb = (8 * background + (ones_background - 6 * background) *
+               ((4 * background ** 2 - 4 * background + 25 * ones_background) ** 0.5)
+               + 12 * background ** 2 + 5 * ones_background) / (48 * background)
+
+        ones_ingredients = np.ones_like(ingredients).reshape(ingredients.shape[0], ingredients.shape[1])
+        fst = ((8 * ingredients + (ones_ingredients - 6 * ingredients) *
+                ((4 * ingredients ** 2 - 4 * ingredients + 25 * ones_ingredients) ** 0.5)
+                + 12 * ingredients ** 2 + 5 * ones_ingredients) / (48 * ingredients) - fsb) / init_conc_array
+
+        fss = np.zeros(31 * recipes.shape[0]).reshape(31, recipes.shape[0])
+        for i in xidx:
+            for j in range(6):
+                fss[i, :] += recipes[:, j] * fst[j, i]
+            fss[i, :] += np.ones(recipes.shape[0]) * fsb[i]
+
+        ones_fss = np.ones_like(fss).reshape(fss.shape[0], fss.shape[1])
+        reflectance = 0.5 * (1 / ((4 * (fss ** 2) + 4 * fss) ** 0.5 + 2 * fss + ones_fss)) + 0.5 * (
+                (((fss + ones_fss) * ((4 * (fss ** 2) + 4 * fss) ** 0.5)) + 2 * (fss ** 2) - 2 * ones_fss) / (
+                2 * (fss + ones_fss) * (3 * fss - ones_fss) * (
+                ((4 * (fss ** 2) + 4 * fss) ** 0.5) + 2 * fss + ones_fss)))
+        reflectance = reflectance.transpose()
+
+    else:
+        print('Sorry no model of that name')
+        exit(1)
+
+    return reflectance
+
+
+def color_diff(reflectance1, reflectance2):
+    tri1 = np.dot(optical_relevant, reflectance1.reshape(31, 1))
+    tri2 = np.dot(optical_relevant, reflectance2.reshape(31, 1))
+
+    lab1 = xyz2lab(tri1)
+    lab2 = xyz2lab(tri2)
+    delta_lab = lab1 - lab2
+
+    diff = (delta_lab[0] ** 2 + delta_lab[1] ** 2 + delta_lab[2] ** 2) ** (1 / 2)
+    return diff
+
+
+def xyz2lab(xyz):
+    r = 0.008856
+    lab = np.zeros(3 * 1)
+
+    if xyz[0] / perfect_white[0] > r and xyz[1] / perfect_white[1] > r and xyz[2] / perfect_white[2] > r:
+        lab[0] = (xyz[1] / perfect_white[1]) ** (1 / 3) * 116 - 16
+        lab[1] = ((xyz[0] / perfect_white[0]) ** (1 / 3) - (xyz[1] / perfect_white[1]) ** (1 / 3)) * 500
+        lab[2] = ((xyz[1] / perfect_white[1]) ** (1 / 3) - (xyz[2] / perfect_white[2]) ** (1 / 3)) * 200
+    else:
+        lab[0] = (xyz[1] / perfect_white[1]) * 903.3
+        lab[1] = (xyz[0] / perfect_white[0] - xyz[1] / perfect_white[1]) * 3893.5
+        lab[2] = (xyz[1] / perfect_white[1] - xyz[2] / perfect_white[2]) * 1557.4
+
+    return lab
+
+
+def test_result():
+    test_sample = np.array([[0.2335778, 0.2669207, 0.2692738, 0.2711587, 0.2714446, 0.2716927, 0.2717375, 0.2719162,
+                             0.2708953, 0.2690464, 0.2680669, 0.2653399, 0.2614551, 0.2566476, 0.2497642, 0.2403944,
+                             0.2294249, 0.2198784, 0.2130321, 0.2085395, 0.2036385, 0.1986061, 0.1988262, 0.2010616,
+                             0.2045918, 0.2065673, 0.2080161, 0.2085742, 0.2017922, 0.2004079, 0.1997598]])
+    recipe = np.array([[0.36730343, 0.25544596, 0.02905927, 0.21943599, 0, -0.00190955]])
+    recipe_ref = recipe_reflectance(recipe)
+    diff = color_diff(test_sample, recipe_ref)
+    print(recipe_ref)
+    print(diff)
+
+
+def four_flux():
+    x = 2.2881
+    y = 0.5 / (2 * x + 2 * ((x ** 2 + x) ** (1 / 2)) + 1) + (
+            0.5 * (1 + x) * (2 * x - 2 * ((x ** 2 + x) ** (1 / 2)) - 2)) / (
+                (6 * (x ** 2) + 4 * x - 2) * (2 * x + 2 * ((x ** 2 + x) ** (1 / 2)) + 1))
+    x_rev_1 = ((5 - 2 * y) * ((36 * (y ** 2) - 28 * y + 1) ** (1 / 2)) - 8 * y + 12 * (y ** 2) + 5) / (80 * y)
+    x_rev_2 = ((2 * y - 5) * ((36 * (y ** 2) - 28 * y + 1) ** (1 / 2)) - 8 * y + 12 * (y ** 2) + 5) / (80 * y)
+    print(y)
+    print(x_rev_1)
+    print(x_rev_2)
