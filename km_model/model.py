@@ -100,6 +100,7 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
     l_tot = 0
     batch_idx = 0
 
+    # 训练轮数相关的权重 4-1
     loss_factor = 600 ** (float(i_epoch) / 300) / 600
     if loss_factor > 1:
         loss_factor = 1
@@ -115,8 +116,10 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
 
         y_clean = y.clone()
 
+        # 对x进行向量补齐
         pad_x = zeros_noise_scale * torch.randn(batch_size, ndim_tot -
                                                 ndim_x, device=device)
+        # 对yz进行向量补齐
         pad_yz = zeros_noise_scale * torch.randn(batch_size, ndim_tot -
                                                  ndim_y - ndim_z, device=device)
 
@@ -129,8 +132,7 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
 
         optimizer.zero_grad()
 
-        # Forward step:
-
+        # 前向训练：
         output = model(x)
 
         # Shorten output, and remove gradients wrt y, for latent loss
@@ -183,7 +185,7 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
 
 def main():
     # ---------------------------------------生成数据------------------------------------------
-    t_generate_start=time()
+    t_generate_start = time()
     # 设置模拟数据参数
     r = 3  # the grid dimension for the output tests
     test_split = r * r  # number of testing samples to use
@@ -195,7 +197,7 @@ def main():
     # 生成训练数据
     concentrations, reflectance, x, info = data.generate(
         model=optical_model,
-        total_dataset_size=2 ** 30,
+        total_dataset_size=2 ** 20 * 20,
         ydim=ydim,
         prior_bound=bound,
         seed=seed
@@ -203,21 +205,17 @@ def main():
     print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
     colors = np.arange(0, concentrations.shape[-1], 1)
 
-    # 截取数据集用于画图
+    # 选取几个不参与训练，用作最后的测试样本
     c_test = concentrations[-test_split:]
     r_test = reflectance[-test_split:]
-    print(reflectance)
-    print(r_test)
-    print(np.array(r_test[0, :]))
 
-    # 示例数据分光反射率3*3图
+    # 测试样本分光反射率图，用于观察，与模型无关
     plt.figure(figsize=(6, 6))
     fig, axes = plt.subplots(r, r, figsize=(6, 6))
     cnt = 0
     for i in range(r):
         for j in range(r):
             axes[i, j].plot(x, np.array(r_test[cnt, :]), '-')
-            # axes[i, j].plot(x, 1, '-')
             cnt += 1
             axes[i, j].axis([400, 700, 0, 1])
     plt.savefig('test_target_reflectance.png', dpi=360)
@@ -225,9 +223,9 @@ def main():
     print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
 
     # ---------------------------------------构建网络------------------------------------------
-    # 设置模型参数值 TODO
-    ndim_x = concentrations.shape[-1]
-    ndim_y = ydim
+    # 设置模型参数值
+    ndim_x = concentrations.shape[-1]  # 配方的维度，即待选色浆的种类数
+    ndim_y = ydim  # 反射率的维度 31
     ndim_z = 13  # 潜在空间的维度
     ndim_tot = max(ndim_x, ndim_y + ndim_z)
 
@@ -272,19 +270,20 @@ def main():
     model = ReversibleGraphNet(nodes)
 
     # ---------------------------------------训练网络------------------------------------------
-    # 超参数 TODO
-    n_epochs = 0
-    plot_cadence = 50
+    # 超参数
+    n_epochs = 3000  # 训练轮数
+    plot_cadence = 50  # 每50步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
-    n_its_per_epoch = 12
-    batch_size = 1600
-    lr = 1.5e-3  # 学习率
+    n_its_per_epoch = 12 # 每次训练12批数据
+    batch_size = 1600#每批1600个样本
+    lr = 1.5e-3  # 初始学习率
     gamma = 0.004 ** (1. / 1333)  # 学习率下降的乘数因子
     l2_reg = 2e-5  # 权重衰减（L2惩罚）
+    # 为了让输入和输出维度相同，对维度进行补齐，不使用0，而是使用一些很小的值
     y_noise_scale = 3e-2
     zeros_noise_scale = 3e-2
 
-    # relative weighting of losses:TODO
+    # 损失的权重
     lambd_predict = 300.  # forward pass
     lambd_latent = 300.  # laten space
     lambd_rev = 400.  # backwards pass
@@ -303,6 +302,7 @@ def main():
                                                 step_size=meta_epoch,
                                                 gamma=gamma)
     # 损失函数设置
+    # x，z无监督：MMD，y有监督：平方误差
     loss_backward = MMD_multiscale
     loss_latent = MMD_multiscale
     loss_fit = fit
@@ -328,8 +328,8 @@ def main():
     # ---------------------------------------开始训练------------------------------------------
     try:
         t_start = time()  # 训练开始时间
-        loss_for_list = []
-        loss_rev_list = []
+        loss_for_list = []#记录前向训练的损失
+        loss_rev_list = []#记录反向训练的损失
 
         tsne = TSNE(n_components=2, init='pca')
         # 颜色编号
@@ -366,14 +366,16 @@ def main():
         # TODO
         # torch.save(model, 'model_dir/4flux_impl_model')
         # model = torch.load('model_dir/km_impl_model')
-        torch.save(model,'model_dir/km_impl_model')
+        torch.save(model, 'model_dir/km_impl_model')
 
         fig, axes = plt.subplots(1, 1, figsize=(2, 2))
+
+        # 真实样本对应的反射率信息
         test_samps = np.array([[0.2673378, 0.3132285, 0.3183329, 0.3234908, 0.3318701, 0.3409707, 0.3604081, 0.4168356,
                                 0.5351773, 0.6202191, 0.6618687, 0.6919741, 0.7136238, 0.7292901, 0.7314631, 0.7131701,
                                 0.6773048, 0.6302681, 0.5738088, 0.5133060, 0.4535525, 0.4108878, 0.3908512, 0.3808001,
                                 0.3752591, 0.3727644, 0.3801365, 0.3976869, 0.4237110, 0.4332685, 0.4433292]])
-
+        # 真实样本对应的配方
         test_cons = np.array(
             [[0, 0.8014, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0.1491,
@@ -394,6 +396,7 @@ def main():
             # 假设涂料浓度小于一定值，就不需要这种涂料
             test_rev = np.where(test_rev < 0.1, 0, test_rev)
 
+            # 计算预测配方的反射率信息
             recipe_ref = data.recipe_reflectance(test_rev, optical_model)
             print("######## Test Sample %d ########" % cnt)
             for n in range(test_rev.shape[0]):

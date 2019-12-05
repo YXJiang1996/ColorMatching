@@ -176,6 +176,10 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     shuffling = np.random.permutation(N)
     concentrations = torch.tensor(concentrations[shuffling], dtype=torch.float)
     reflectance = torch.tensor(reflectance[shuffling], dtype=torch.float)
+    # concentrations:各个样本对应的浓度
+    # reflectance:配方对应的分光反射率
+    # xvec:400-710,波长的取值
+    # info:基础信息
     return concentrations, reflectance, xvec, info
 
 def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
