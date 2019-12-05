@@ -195,7 +195,7 @@ def main():
     # 生成训练数据
     concentrations, reflectance, x, info = data.generate(
         model=optical_model,
-        total_dataset_size=2 ** 20 * 20,
+        total_dataset_size=2 ** 30,
         ydim=ydim,
         prior_bound=bound,
         seed=seed
