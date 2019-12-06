@@ -271,7 +271,7 @@ def main():
 
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
-    n_epochs = 3000  # 训练轮数
+    n_epochs = 0  # 训练轮数
     plot_cadence = 50  # 每50步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
     n_its_per_epoch = 12 # 每次训练12批数据
@@ -364,9 +364,8 @@ def main():
                 plot_losses(inn_losses, legend=['PE-GEN'])
 
         # TODO
-        # torch.save(model, 'model_dir/4flux_impl_model')
-        # model = torch.load('model_dir/km_impl_model')
-        torch.save(model, 'model_dir/km_impl_model')
+        model = torch.load('model_dir/km_impl_model')
+        # torch.save(model, 'model_dir/km_impl_model')
 
         fig, axes = plt.subplots(1, 1, figsize=(2, 2))
 
@@ -377,9 +376,9 @@ def main():
                                 0.3752591, 0.3727644, 0.3801365, 0.3976869, 0.4237110, 0.4332685, 0.4433292]])
         # 真实样本对应的配方
         test_cons = np.array(
-            [[0, 0.8014, 0, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0.1491,
-              0, 0, 0, 0.2241, 0]])
+            [[0, 0.8014, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 0, 0, 0,
+              0.1491,0, 0, 0, 0.2241, 0]])
         for cnt in range(test_samps.shape[0]):
             test_samp = np.tile(np.array(test_samps[cnt, :]), N_samp).reshape(N_samp, ydim)
             test_samp = torch.tensor(test_samp, dtype=torch.float)
@@ -399,10 +398,16 @@ def main():
             # 计算预测配方的反射率信息
             recipe_ref = data.recipe_reflectance(test_rev, optical_model)
             print("######## Test Sample %d ########" % cnt)
+            min_diff=100
+            min_index=0
             for n in range(test_rev.shape[0]):
-                print(test_rev[n, :])
+                # print(test_rev[n, :])
                 diff = data.color_diff(test_samps[cnt, :], recipe_ref[n, :])
-                print("color diff: %.2f \n" % diff)
+                if diff<min_diff:
+                    min_diff=diff
+                    min_index=n
+            print(test_rev[min_index, :])
+            print("color diff: %.2f \n" % min_diff)
             print("\n\n")
 
             # draw
@@ -490,10 +495,17 @@ def main():
                 print("######## Test %d ########" % cnt)
                 print(c_test[cnt])
                 print("################")
+                min_index=0;
+                min_diff=100
                 for n in range(rev_x.shape[0]):
-                    print(rev_x[n, :])
+                    # print(rev_x[n, :])
                     diff = data.color_diff(r_test[cnt].numpy(), recipe_ref[n, :])
-                    print("color diff: %.2f \n" % diff)
+                    if diff < min_diff:
+                        min_index=n
+                        min_diff=diff
+                print(test_rev[min_index, :])
+                print("color diff: %.2f \n" % min_diff)
+                    # print("color diff: %.2f \n" % diff)
                 print("\n\n")
 
                 cnt += 1
