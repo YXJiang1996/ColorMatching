@@ -376,9 +376,7 @@ def main():
                                 0.3752591, 0.3727644, 0.3801365, 0.3976869, 0.4237110, 0.4332685, 0.4433292]])
         # 真实样本对应的配方
         test_cons = np.array(
-            [[0, 0.8014, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 0, 0,
-              0.1491, 0, 0, 0, 0, 0.2241, 0]])
+            [[0, 0.8014, 0.1491, 0, 0.2241, 0, 0, 0, 0, 0]])
         for cnt in range(test_samps.shape[0]):
             test_samp = np.tile(np.array(test_samps[cnt, :]), N_samp).reshape(N_samp, ydim)
             test_samp = torch.tensor(test_samp, dtype=torch.float)
