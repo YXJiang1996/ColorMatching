@@ -135,7 +135,6 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     # 将浓度信息约束到指定的范围中
     for i in colors:
         concentrations[:, i] = prior_bound[0] + (prior_bound[1] - prior_bound[0]) * concentrations[:, i]
-    print(colors)
     # 在21中颜色中选18种的排列组合
     r1 = list(combinations(np.arange(0, colors.size, 1), 20))
     r2 = list(combinations(np.arange(0, colors.size, 1), 19))

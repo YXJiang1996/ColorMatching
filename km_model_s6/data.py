@@ -40,7 +40,7 @@ background = np.array(
 info = background.copy()
 for i, c in enumerate(cInit):
     info = np.append(info, c)
-info = np.append(info, ingredients[i])
+    info = np.append(info, ingredients[i])
 # CIE标准照明体D65光源，10°视场
 optical_relevant = np.array(
     [[0.136, 0.667, 1.644, 2.348, 3.463, 3.733, 3.065, 1.934, 0.803, 0.151, 0.036, 0.348, 1.062,
@@ -76,9 +76,7 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
         concentrations[:, i] = prior_bound[0] + (prior_bound[1] - prior_bound[0]) * concentrations[:, i]
 
     # 在21中颜色中选3种的排列组合
-    print(colors)
     r = list(combinations(np.arange(0, colors.size, 1), 3))
-    print(r)
     r_num = r.__len__()
     n = N // r_num
     # 根据排列组合将对应的位置为0
