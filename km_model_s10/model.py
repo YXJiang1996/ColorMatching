@@ -333,9 +333,9 @@ def main():
 
         tsne = TSNE(n_components=2, init='pca')
         # 颜色编号
-        color_names = ['07H', '08', '08S', '09', '09B', '09S', '10B', '12', '13',
-                       '14', '15', '16', '17A', '18A', '19A', '20A-2',
-                       '23A', '2704', '2803', '2804', '2807']
+        color_names = ['07H', '08', '20A-2', '2704' '2804', '16',
+                       '08S', '09', '09B', '09S'
+                       ]
 
         # loop over number of epochs
         for i_epoch in tqdm(range(n_epochs), ascii=True, ncols=80):

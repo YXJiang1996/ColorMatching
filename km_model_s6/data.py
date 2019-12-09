@@ -76,7 +76,9 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
         concentrations[:, i] = prior_bound[0] + (prior_bound[1] - prior_bound[0]) * concentrations[:, i]
 
     # 在21中颜色中选3种的排列组合
+    print(colors)
     r = list(combinations(np.arange(0, colors.size, 1), 3))
+    print(r)
     r_num = r.__len__()
     n = N // r_num
     # 根据排列组合将对应的位置为0
@@ -120,7 +122,7 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     # info:基础信息
     return concentrations, reflectance, xvec, info
 
-
+generate(10)
 def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
     mcx = np.linspace(bound[0], bound[1], n_grid)
     dmcx = mcx[1] - mcx[0]
