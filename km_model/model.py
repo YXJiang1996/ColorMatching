@@ -271,11 +271,11 @@ def main():
 
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
-    n_epochs = 0  # 训练轮数
+    n_epochs = 3000  # 训练轮数
     plot_cadence = 50  # 每50步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
-    n_its_per_epoch = 12 # 每次训练12批数据
-    batch_size = 1600#每批1600个样本
+    n_its_per_epoch = 12  # 每次训练12批数据
+    batch_size = 1600  # 每批1600个样本
     lr = 1.5e-3  # 初始学习率
     gamma = 0.004 ** (1. / 1333)  # 学习率下降的乘数因子
     l2_reg = 2e-5  # 权重衰减（L2惩罚）
@@ -328,8 +328,8 @@ def main():
     # ---------------------------------------开始训练------------------------------------------
     try:
         t_start = time()  # 训练开始时间
-        loss_for_list = []#记录前向训练的损失
-        loss_rev_list = []#记录反向训练的损失
+        loss_for_list = []  # 记录前向训练的损失
+        loss_rev_list = []  # 记录反向训练的损失
 
         tsne = TSNE(n_components=2, init='pca')
         # 颜色编号
@@ -364,8 +364,8 @@ def main():
                 plot_losses(inn_losses, legend=['PE-GEN'])
 
         # TODO
-        model = torch.load('model_dir/km_impl_model')
-        # torch.save(model, 'model_dir/km_impl_model')
+        # model = torch.load('model_dir/km_impl_model')
+        torch.save(model, 'model_dir/km_impl_model')
 
         fig, axes = plt.subplots(1, 1, figsize=(2, 2))
 
@@ -378,7 +378,7 @@ def main():
         test_cons = np.array(
             [[0, 0.8014, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0,
-              0.1491,0, 0, 0, 0.2241, 0]])
+              0.1491, 0, 0, 0, 0.2241, 0]])
         for cnt in range(test_samps.shape[0]):
             test_samp = np.tile(np.array(test_samps[cnt, :]), N_samp).reshape(N_samp, ydim)
             test_samp = torch.tensor(test_samp, dtype=torch.float)
@@ -398,16 +398,19 @@ def main():
             # 计算预测配方的反射率信息
             recipe_ref = data.recipe_reflectance(test_rev, optical_model)
             print("######## Test Sample %d ########" % cnt)
-            min_diff=100
-            min_index=0
+            # 用于记录色差最小的三个配方
+            top3 = [[100, 0], [100, 0], [100, 0]]
             for n in range(test_rev.shape[0]):
                 # print(test_rev[n, :])
                 diff = data.color_diff(test_samps[cnt, :], recipe_ref[n, :])
-                if diff<min_diff:
-                    min_diff=diff
-                    min_index=n
-            print(test_rev[min_index, :])
-            print("color diff: %.2f \n" % min_diff)
+                if diff < top3[2][0]:
+                    top3[2][0] = diff
+                    top3[2][1] = n
+                    top3.sort()
+            # 将色差最小的三个配方打印出来
+            for n in range(3):
+                print(test_rev[top3[n][1], :])
+                print("color diff: %.2f \n" % top3[n][0])
             print("\n\n")
 
             # draw
@@ -495,17 +498,19 @@ def main():
                 print("######## Test %d ########" % cnt)
                 print(c_test[cnt])
                 print("################")
-                min_index=0;
-                min_diff=100
+                # 用于记录色差最小的三个配方
+                top3 = [[100, 0], [100, 0], [100, 0]]
                 for n in range(rev_x.shape[0]):
                     # print(rev_x[n, :])
                     diff = data.color_diff(r_test[cnt].numpy(), recipe_ref[n, :])
-                    if diff < min_diff:
-                        min_index=n
-                        min_diff=diff
-                print(test_rev[min_index, :])
-                print("color diff: %.2f \n" % min_diff)
-                    # print("color diff: %.2f \n" % diff)
+                    if diff < top3[2][0]:
+                        top3[2][0] = diff
+                        top3[2][1] = n
+                        top3.sort()
+                # 将色差最小的三个配方打印出来
+                for n in range(3):
+                    print(test_rev[top3[n][1], :])
+                    print("color diff: %.2f \n" % top3[n][0])
                 print("\n\n")
 
                 cnt += 1
