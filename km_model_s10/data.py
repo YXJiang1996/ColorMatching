@@ -201,7 +201,7 @@ def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
 
 def recipe_reflectance(recipes, model='km'):
     xidx = np.arange(0, 31, 1)
-    init_conc_array = np.repeat(cInit.reshape(21, 1), 31).reshape(21, 31)
+    init_conc_array = np.repeat(cInit.reshape(10, 1), 31).reshape(10, 31)
     reflectance = np.zeros(31 * recipes.shape[0]).reshape(31, recipes.shape[0])
 
     if model == 'km':

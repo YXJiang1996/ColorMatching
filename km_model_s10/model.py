@@ -271,7 +271,7 @@ def main():
 
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
-    n_epochs = 3000  # 训练轮数
+    n_epochs = 0  # 训练轮数
     plot_cadence = 50  # 每50步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
     n_its_per_epoch = 12  # 每次训练12批数据
@@ -333,7 +333,7 @@ def main():
 
         tsne = TSNE(n_components=2, init='pca')
         # 颜色编号
-        color_names = ['07H', '08', '20A-2', '2704' '2804', '16',
+        color_names = ['07H', '08', '20A-2', '2704','2804', '16',
                        '08S', '09', '09B', '09S'
                        ]
 
@@ -364,8 +364,8 @@ def main():
                 plot_losses(inn_losses, legend=['PE-GEN'])
 
         # TODO
-        # model = torch.load('model_dir/km_impl_model')
-        torch.save(model, 'model_dir/km_impl_model')
+        model = torch.load('model_dir/km_impl_model')
+        # torch.save(model, 'model_dir/km_impl_model')
 
         fig, axes = plt.subplots(1, 1, figsize=(2, 2))
 
