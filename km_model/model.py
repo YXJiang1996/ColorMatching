@@ -57,37 +57,39 @@ def running_mean(x, n):
     return (cumsum[n:] - cumsum[:-n]) / float(n)
 
 
-def plot_losses(losses, logscale=False, legend=None):
+def plot_losses(losses, logscale=False, legend=None,lossNo=0):
     # 正向传播损失
     fig = plt.figure(figsize=(6, 6))
     losses = np.array(losses)
     ax1 = fig.add_subplot(211)
-    ax1.plot(losses[0], 'b')
+    # ax1.plot(losses[0], 'b')
+    ax1.plot(losses[0][(lossNo-1)*100:lossNo*100],'b')
     ax1.set_xlabel(r'epoch')
-    ax1.set_ylabel(r'loss')
+    ax1.set_ylabel(r'loss_dir')
     if legend is not None:
         ax1.legend('forward pass', loc='upper left')
-    ax1.plot(running_mean(losses[0], 50), 'g')
+    # ax1.plot(running_mean(losses[0], 50), 'g')
 
     # 逆向传播损失
     ax2 = fig.add_subplot(212)
-    ax2.plot(losses[1], 'r')
+    # ax2.plot(losses[1], 'r')
+    ax2.plot(losses[1][(lossNo - 1) * 100:lossNo * 100], 'r')
 
     # rescale axis using a logistic function so that we see more detail
     # close to 0 and close 1
     ax2.set_xlabel(r'epoch')
-    ax2.set_ylabel(r'loss')
+    ax2.set_ylabel(r'loss_dir')
     if legend is not None:
         ax2.legend('backward pass', loc='upper left')
 
-    ax2.plot(running_mean(losses[1], 50), 'y')
+    # ax2.plot(running_mean(losses[1], 50), 'y')
 
     if logscale:
         ax1.set_xscale("log", nonposx='clip')
         ax1.set_yscale("log", nonposy='clip')
         ax2.set_xscale("log", nonposx='clip')
         ax2.set_yscale("log", nonposy='clip')
-    plt.savefig('losses.png')
+    plt.savefig('loss_dir/losses%d.png'% lossNo)
     plt.close()
 
 
@@ -135,7 +137,7 @@ def train(model, train_loader, n_its_per_epoch, zeros_noise_scale, batch_size, n
         # 前向训练：
         output = model(x)
 
-        # Shorten output, and remove gradients wrt y, for latent loss
+        # Shorten output, and remove gradients wrt y, for latent loss_dir
         y_short = torch.cat((y[:, :ndim_z], y[:, -ndim_y:]), dim=1)
 
         l = lambd_predict * loss_fit(output[:, ndim_z:], y[:, ndim_z:])
@@ -272,7 +274,7 @@ def main():
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
     n_epochs = 3000  # 训练轮数
-    plot_cadence = 50  # 每50步画一次损失函数图
+    plot_cadence = 100  # 每50步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
     n_its_per_epoch = 12  # 每次训练12批数据
     batch_size = 1600  # 每批1600个样本
@@ -339,7 +341,6 @@ def main():
 
         # loop over number of epochs
         for i_epoch in tqdm(range(n_epochs), ascii=True, ncols=80):
-
             scheduler.step()
 
             # Initially, the l2 reg. on x and z can give huge gradients, set
@@ -360,8 +361,8 @@ def main():
             loss_rev_list.append(loss_rev.item())
             inn_losses = [loss_for_list, loss_rev_list]
 
-            if (i_epoch % plot_cadence == 0) & (i_epoch > 0):
-                plot_losses(inn_losses, legend=['PE-GEN'])
+            if ((i_epoch+1) % plot_cadence == 0) & (i_epoch > 0):
+                plot_losses(inn_losses, legend=['PE-GEN'],lossNo=int((i_epoch+1)/plot_cadence))
 
         # TODO
         # model = torch.load('model_dir/km_impl_model')
