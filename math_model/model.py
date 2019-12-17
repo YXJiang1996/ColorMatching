@@ -195,17 +195,15 @@ def main():
     seed = 1  # seed for generating data
 
     # 生成训练数据
-    concentrations, reflectance, x, info = data.generate(
-        model=optical_model,
-        total_dataset_size=2 ** 20 * 20,
-        ydim=ydim,
-        prior_bound=bound,
-        seed=seed
-    )
-    print(concentrations)
-    print(reflectance)
-    print(x)
-    print(info)
+    # concentrations, reflectance, x, info = data.generate(
+    #     model=optical_model,
+    #     total_dataset_size=2 ** 20 * 20,
+    #     ydim=ydim,
+    #     prior_bound=bound,
+    #     seed=seed
+    # )
+    concentrations, reflectance, x, info = data.math_optimized_generate()
+
     print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
     colors = np.arange(0, concentrations.shape[-1], 1)
 
@@ -276,6 +274,7 @@ def main():
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
     n_epochs = 3000  # 训练轮数
+    # n_epochs = 0  # 训练轮数
     plot_cadence = 100  # 每100步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
     n_its_per_epoch = 12  # 每次训练12批数据

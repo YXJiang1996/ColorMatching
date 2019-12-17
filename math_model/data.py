@@ -180,7 +180,18 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     # reflectance:配方对应的分光反射率
     # xvec:400-710,波长的取值
     # info:基础信息
+    # print(concentrations.dtype)
     return concentrations, reflectance, xvec, info
+# generate(1024)
+
+def math_optimized_generate(info=info):
+    data = np.load('math/dataset_Corrected_01.npz')
+    concentrations=torch.from_numpy(data['concentrations']).float()
+    reflectance=torch.from_numpy(data['reflectance']).float()
+    xvec = np.arange(400, 710, 10)
+    # print(concentrations.dtype)
+    return concentrations,reflectance,xvec,info
+# math_optimized_generate(1024)
 
 def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
     mcx = np.linspace(bound[0], bound[1], n_grid)
