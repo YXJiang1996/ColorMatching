@@ -195,15 +195,17 @@ def main():
     seed = 1  # seed for generating data
 
     # 生成训练数据
-    # concentrations, reflectance, x, info = data.generate(
-    #     model=optical_model,
-    #     total_dataset_size=2 ** 20 * 20,
-    #     ydim=ydim,
-    #     prior_bound=bound,
-    #     seed=seed
-    # )
-    concentrations, reflectance, x, info = data.math_optimized_generate()
-
+    concentrations, reflectance, x, info = data.generate(
+        model=optical_model,
+        total_dataset_size=2 ** 20 * 20,
+        ydim=ydim,
+        prior_bound=bound,
+        seed=seed
+    )
+    print(concentrations)
+    print(reflectance)
+    print(x)
+    print(info)
     print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
     colors = np.arange(0, concentrations.shape[-1], 1)
 
@@ -274,7 +276,6 @@ def main():
     # ---------------------------------------训练网络------------------------------------------
     # 超参数
     n_epochs = 3000  # 训练轮数
-    # n_epochs = 0  # 训练轮数
     plot_cadence = 100  # 每100步画一次损失函数图
     meta_epoch = 12  # 调整学习率的步长
     n_its_per_epoch = 12  # 每次训练12批数据
@@ -398,7 +399,9 @@ def main():
             test_rev = np.where(test_rev < 0.1, 0, test_rev)
 
             # 计算预测配方的反射率信息
-            recipe_ref = data.recipe_reflectance(test_rev, optical_model)
+            # recipe_ref = data.recipe_reflectance(test_rev, optical_model)
+            # 使用修正后的模型计算配方的反射率信息
+            recipe_ref=data.correct_recipe_reflectance(test_rev)
             print("######## Test Sample %d ########" % cnt)
             # 用于记录色差最小的三个配方
             top3 = [[100, 0], [100, 0], [100, 0]]
@@ -496,7 +499,9 @@ def main():
                 fig.canvas.draw()
                 plt.savefig('training_result%d.png' % cnt, dpi=360)
 
-                recipe_ref = data.recipe_reflectance(rev_x, optical_model)
+                # recipe_ref = data.recipe_reflectance(rev_x, optical_model)
+                # 使用修正后的模型计算配方的反射率信息
+                recipe_ref = data.correct_recipe_reflectance(rev_x)
                 print("######## Test %d ########" % cnt)
                 print(c_test[cnt])
                 print("################")

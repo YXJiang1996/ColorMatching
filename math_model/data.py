@@ -1,6 +1,9 @@
 import torch
 import numpy as np
+import math_model.math.Mix as mix
 from itertools import combinations
+
+# from math_model.math.Mix import get_dfs_KM
 
 # 21种涂料的反射光谱数据
 ingredients = np.array([
@@ -151,14 +154,14 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     # 原本为21*1，重复为ydim=31次，再转变为21*31
     initial_conc_array = np.repeat(initial_concentration.reshape(colors.size, 1), ydim).reshape(colors.size, ydim)
 
-    #使用km模型的情况
+    # 使用km模型的情况
     if model == 'km':
         # 基底的K/S值，论文公式4-6a
         fsb = (np.ones_like(background) - background) ** 2 / (background * 2)
         # 各种色浆的单位K/S值，论文公式4-6b
-        fst=((np.ones_like(ingredients)-ingredients)**2/(ingredients*2)-fsb)/initial_conc_array
+        fst = ((np.ones_like(ingredients) - ingredients) ** 2 / (ingredients * 2) - fsb) / initial_conc_array
         # ydim*N的0
-        fss=np.zeros(N*ydim).reshape(ydim,N)
+        fss = np.zeros(N * ydim).reshape(ydim, N)
         # 涂料的K/S值,论文公式4-6c
         for i in xidx:
             for j in colors:
@@ -182,15 +185,19 @@ def generate(total_dataset_size, model='km', ydim=31, info=info, prior_bound=[0,
     # info:基础信息
     # print(concentrations.dtype)
     return concentrations, reflectance, xvec, info
+
+
 # generate(1024)
 
 def math_optimized_generate(info=info):
     data = np.load('math/dataset_Corrected_01.npz')
-    concentrations=torch.from_numpy(data['concentrations']).float()
-    reflectance=torch.from_numpy(data['reflectance']).float()
+    concentrations = torch.from_numpy(data['concentrations']).float()
+    reflectance = torch.from_numpy(data['reflectance']).float()
     xvec = np.arange(400, 710, 10)
     # print(concentrations.dtype)
-    return concentrations,reflectance,xvec,info
+    return concentrations, reflectance, xvec, info
+
+
 # math_optimized_generate(1024)
 
 def get_lik(ydata, n_grid=64, info=info, model='km', bound=[0, 1, 0, 1]):
@@ -298,6 +305,13 @@ def recipe_reflectance(recipes, model='km'):
         exit(1)
 
     return reflectance
+
+
+# 使用修正模型计算配方分光反射率的方式
+def correct_recipe_reflectance(recipes):
+    w = np.load('math/data_w.npy').T
+    dfs = mix.get_dfs_KM(w)
+    return mix.corrected_Mix(recipes, w, dfs)
 
 
 def color_diff(reflectance1, reflectance2):
