@@ -33,8 +33,8 @@ RealIngredient = np.array(
     ]
 )
 
-data_c = np.load('data_c.npy')
-data_p = np.load('data_p.npy').T
+data_c = np.load('math/data_c.npy')
+data_p = np.load('math/data_p.npy').T
 
 # return F
 def math_model(ingredient, model = 'km'):
@@ -123,7 +123,7 @@ def corrected_Mix_Recip(compose,w):
 def main():
     # com = 0
     # compose = np.array([0.127,0,0,0,0,0,0,0,0,0,0,0.0748,0,0,0,0,0,0.56,0,0,0])
-    w = np.load('data_w.npy').T
+    w = np.load('math/data_w.npy').T
     dfs = get_dfs_KM(w)
 
     # print(np.sum((RealIngredient[com] - corrected_Mix(compose,w,dfs)) ** 2))
@@ -149,4 +149,4 @@ def main():
     data = np.load('dataset_Corrected_01.npz')
     # print(data['reflectance'])
 
-main()
+# main()
