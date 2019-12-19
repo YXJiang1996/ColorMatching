@@ -325,7 +325,6 @@ def color_diff(reflectance1, reflectance2):
     diff = (delta_lab[0] ** 2 + delta_lab[1] ** 2 + delta_lab[2] ** 2) ** (1 / 2)
     return diff
 
-
 def xyz2lab(xyz):
     r = 0.008856
     lab = np.zeros(3 * 1)
@@ -364,3 +363,18 @@ def four_flux():
     print(y)
     print(x_rev_1)
     print(x_rev_2)
+
+
+test_samps = np.array([[0.2673378, 0.3132285, 0.3183329, 0.3234908, 0.3318701, 0.3409707, 0.3604081, 0.4168356,
+                        0.5351773, 0.6202191, 0.6618687, 0.6919741, 0.7136238, 0.7292901, 0.7314631, 0.7131701,
+                        0.6773048, 0.6302681, 0.5738088, 0.5133060, 0.4535525, 0.4108878, 0.3908512, 0.3808001,
+                        0.3752591, 0.3727644, 0.3801365, 0.3976869, 0.4237110, 0.4332685, 0.4433292]])
+
+test_cons = np.array(
+    [[0, 0.8014, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0,
+      0, 0.1491, 0, 0, 0, 0.2241, 0]])
+
+test_reflectance=recipe_reflectance(test_cons, model='km')
+test_diff=color_diff(test_samps,test_reflectance)
+print(test_diff)
