@@ -57,13 +57,13 @@ def running_mean(x, n):
     return (cumsum[n:] - cumsum[:-n]) / float(n)
 
 
-def plot_losses(losses, logscale=False, legend=None,lossNo=0):
+def plot_losses(losses, logscale=False, legend=None, lossNo=0):
     # 正向传播损失
     fig = plt.figure(figsize=(6, 6))
     losses = np.array(losses)
     ax1 = fig.add_subplot(211)
     # ax1.plot(losses[0], 'b')
-    ax1.plot(losses[0][(lossNo-1)*100:lossNo*100],'b')
+    ax1.plot(losses[0][(lossNo - 1) * 100:lossNo * 100], 'b')
     ax1.set_xlabel(r'epoch')
     ax1.set_ylabel(r'loss')
     if legend is not None:
@@ -87,7 +87,7 @@ def plot_losses(losses, logscale=False, legend=None,lossNo=0):
         ax1.set_yscale("log", nonposy='clip')
         ax2.set_xscale("log", nonposx='clip')
         ax2.set_yscale("log", nonposy='clip')
-    plt.savefig('loss_dir/losses%d.png'% lossNo)
+    plt.savefig('loss_dir/losses%d.png' % lossNo)
     plt.close()
 
 
@@ -202,7 +202,7 @@ def main():
     #     prior_bound=bound,
     #     seed=seed
     # )
-    concentrations,reflectance,x,info=data.math_optimized_generate()
+    concentrations, reflectance, x, info = data.math_optimized_generate()
 
     print("\n\nGenerating data took %.2f minutes\n" % ((time() - t_generate_start) / 60))
     colors = np.arange(0, concentrations.shape[-1], 1)
@@ -362,8 +362,8 @@ def main():
             loss_rev_list.append(loss_rev.item())
             inn_losses = [loss_for_list, loss_rev_list]
 
-            if ((i_epoch+1) % plot_cadence == 0) & (i_epoch > 0):
-                plot_losses(inn_losses, legend=['PE-GEN'],lossNo=int((i_epoch+1)/plot_cadence))
+            if ((i_epoch + 1) % plot_cadence == 0) & (i_epoch > 0):
+                plot_losses(inn_losses, legend=['PE-GEN'], lossNo=int((i_epoch + 1) / plot_cadence))
 
         # TODO
         model = torch.load('model_dir/km_impl_model')
@@ -382,6 +382,7 @@ def main():
               0, 0, 0, 0, 0, 0, 0,
               0, 0.1491, 0, 0, 0, 0.2241, 0]])
         for cnt in range(test_samps.shape[0]):
+            print('before:',cnt,test_samps[cnt, :])
             test_samp = np.tile(np.array(test_samps[cnt, :]), N_samp).reshape(N_samp, ydim)
             test_samp = torch.tensor(test_samp, dtype=torch.float)
             test_samp += y_noise_scale * torch.randn(N_samp, ydim)
@@ -391,6 +392,7 @@ def main():
                                    test_samp], dim=1)
             test_samp = test_samp.to(device)
 
+            print('after:',cnt,test_samp)
             # use the network to predict parameters
             test_rev = model(test_samp, rev=True)[:, :colors.size]
             test_rev = test_rev.cpu().data.numpy()
@@ -400,7 +402,7 @@ def main():
             # 计算预测配方的反射率信息
             # recipe_ref = data.recipe_reflectance(test_rev, optical_model)
             # 使用修正后的模型计算配方的反射率信息
-            recipe_ref=data.correct_recipe_reflectance(test_rev)
+            recipe_ref = data.correct_recipe_reflectance(test_rev)
             print("######## Test Sample %d ########" % cnt)
             # 用于记录色差最小的三个配方
             top3 = [[100, 0], [100, 0], [100, 0]]

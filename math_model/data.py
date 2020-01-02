@@ -269,7 +269,7 @@ def recipe_reflectance(recipes, model='km'):
         fst = ((np.ones_like(ingredients) - ingredients) ** 2 / (ingredients * 2) - fsb) / init_conc_array
         fss = np.zeros(31 * recipes.shape[0]).reshape(31, recipes.shape[0])
         for i in xidx:
-            for j in range(6):
+            for j in range(21):
                 fss[i, :] += recipes[:, j] * fst[j, i]
             fss[i, :] += np.ones(recipes.shape[0]) * fsb[i]
 
